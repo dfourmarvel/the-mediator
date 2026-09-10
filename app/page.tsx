@@ -118,7 +118,10 @@ export default function Page() {
     () => computeBalance(ASSUMED_YIELD, parties),
     [parties]
   );
-  const agreement = useMemo(() => buildAgreement(balance, yield_ === ASSUMED_YIELD ? 1 : 2), [balance, yield_]);
+  const agreement = useMemo(
+    () => buildAgreement(balance, yield_ === ASSUMED_YIELD ? 1 : 2, parties),
+    [balance, yield_, parties]
+  );
   const faults = useMemo(() => agreementFaults(agreement, balance), [agreement, balance]);
   const shocked = yield_ !== ASSUMED_YIELD;
   const deltas = useMemo(
