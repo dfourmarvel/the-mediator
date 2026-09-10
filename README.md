@@ -21,19 +21,36 @@ This is the design decision everything else rests on.
 
 Because floors come from how many people exist rather than from history, the school that opened in January is protected on exactly the same basis as households that have drawn from the borehole for decades. Arithmetic has no opinion about seniority.
 
+## Asking for more does not get you more
+
+Every party also carries a **ceiling on justified use**, computed from the record the same way its floor is computed from headcount. The share of the discretionary pool is worked out against the ceiling, never against the ask.
+
+| Party | Asked | Ceiling | Where the ceiling comes from |
+|---|---|---|---|
+| Households | 14,000 | 13,860 | 462 × 30 L/person/day — hand-carried draw above about 30 L is not physically typical, and there are no household connections here |
+| School | 4,200 | 5,700 | 380 × 15 L/pupil/day, WHO day-school upper bound with latrines and handwashing |
+| Subsistence | 9,000 | 10,200 | 34 plots × 300 L/day, the full dry-season staple requirement |
+| Cash-crop | 22,000 | 21,600 | 0.9 ha on drip at 2.4 mm/day — every figure supplied by their own consultant's annex |
+
+Without this, the fill rewards whoever opens highest: the discretionary share is proportional to unmet need, and need is the gap between a floor and a self-declared number. A party that trebled its ask took roughly a third more water and everyone else lost between 10 and 19 per cent of theirs. Two parties are asking above their ceiling, and it earns them nothing.
+
+It also settles what the tabled report is actually worth. The growers' 22,000 was never doing any work — the balance was already computing against 21,600, because that is what 0.9 hectares on drip can justify. Recomputing their annex does not take their water. It takes their argument.
+
 ## What happens when the yield drops 40%
 
 Mid-negotiation the engineer reports that sustainable yield is 28,800 L/day, not the 48,000 everyone has been dividing up. Every allocated figure recomputes. No floor moves, because floors were never derived from supply — so the entire shortfall lands on the discretionary layer.
 
 | Party | Before | After | Change |
 |---|---|---|---|
-| Household Water Committee | 14,000 | 11,385 | −19% |
-| Nkwanta Community School | 4,200 | 2,937 | −30% |
-| Subsistence growers | 9,000 | 5,874 | −35% |
-| Cash-crop growers | 20,800 | 8,604 | −58% |
+| Household Water Committee | 13,860 | 11,336 | −18.2% |
+| Nkwanta Community School | 4,200 | 2,944 | −29.9% |
+| Subsistence growers | 9,000 | 5,888 | −34.6% |
+| Cash-crop growers | 20,940 | 8,632 | −58.8% |
 | District Assembly | 0 | 0 | deferred |
 
 Cash-crop absorbs most of it and still holds a 4,320 L/day keep-alive floor: it crops less, it does not lose the farms. When the households propose an equal 40% cut for everyone, the mediator refuses — an equal percentage takes the same share from the water a child drinks and the water a tomato drinks.
+
+The same rule holds in the case nobody wants. If the yield ever falls below the floors themselves, the engine does not scale every floor down by a common factor — that would be the equal-percentage cut it just refused, applied at the worst possible moment. Survival floors are paid first and shared within survival only; livelihood and commercial go to zero before a drinking-water floor is touched. Nothing on that path can be signed, and the schedule reports each party's true floor next to what it would actually receive, so the gap is on the page rather than hidden by a floor that quietly moved.
 
 ## The fabricated report
 
@@ -81,7 +98,9 @@ The default is a chain of free OpenRouter models tried in order of measured late
 
 ## The model boundary
 
-Model output is treated as untrusted input. Flag kinds and effect kinds are whitelisted, litre figures are clamped, and sustainable yield — the one number that moves everything — is not reachable from model output at all. Nothing said at the table, by any party, can move water the balance did not allocate.
+Model output is treated as untrusted input. Flag kinds and effect kinds are whitelisted against the engine, and sustainable yield — the one number that moves everything — is not reachable from model output at all.
+
+Claims are reachable, because they have to be: correcting a figure at the table is the whole point of catching the report. So the channel is narrowed instead of closed. A claim revision is clamped **downward only** — a party can concede, it cannot talk its way to a larger ask — and the balance never computes a share against the ask in the first place. It computes against the ceiling, which comes from the record. Raise the cash-crop claim to any number you like and the schedule does not move a litre. There is a test for it.
 
 ## Layout
 

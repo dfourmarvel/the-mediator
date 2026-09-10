@@ -6,7 +6,7 @@
 // travelling to the district capital. An agreement that can only be enforced by
 // an outside authority is not an agreement, it is a request.
 
-import { PARTIES, TIERS, partyOf, type Balance, type Party } from "./water";
+import { PARTIES, TIERS, partyOf, type Balance, type Party } from "./water.ts";
 
 export const LEVY_PER_1000L: Record<Party["tier"], number> = {
   survival: 0.3,
@@ -27,6 +27,8 @@ export interface ScheduleRow {
   tolerance: number;
   levyMonthly: number;
   floorBasis: string;
+  needCeiling: number;
+  needBasis: string;
 }
 
 export interface Clause {
@@ -72,6 +74,8 @@ export function buildAgreement(
       tolerance: Math.round(a.total * TOLERANCE),
       levyMonthly: Math.round(levy),
       floorBasis: p.floorBasis,
+      needCeiling: p.needCeiling,
+      needBasis: p.needBasis,
     };
   });
 
@@ -91,11 +95,16 @@ export function buildAgreement(
     },
     {
       n: "2",
-      heading: "Protected floors",
+      heading: "Protected floors and justified ceilings",
       derived: true,
       body: `The floor component of each allocation is derived from headcount and is not tradeable, lendable, or available as a concession in any future negotiation. Floors total ${L(
         balance.floorsTotal
-      )}. A party may give away water above its floor. No party may give away water below it, and no party may accept such an offer.`,
+      )}. A party may give away water above its floor. No party may give away water below it, and no party may accept such an offer.
+
+Each party also carries a ceiling on justified use, computed from the record in the same way as its floor: ${schedule
+        .filter((r) => r.needCeiling > 0)
+        .map((r) => `${r.name} ${L(r.needCeiling)} — ${r.needBasis}`)
+        .join(" ")} A party may ask for more than its ceiling and several did, but the share of the discretionary pool is computed on the ceiling, so asking for more does not produce more. This is what stops the schedule rewarding whoever opened highest.`,
     },
     {
       n: "3",

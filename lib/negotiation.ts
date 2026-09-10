@@ -1,4 +1,4 @@
-import { TESTED_YIELD } from "./water";
+import { TESTED_YIELD, type Balance } from "./water.ts";
 
 export type FlagKind =
   | "FABRICATION"
@@ -154,7 +154,7 @@ export const MOVES: Move[] = [
     speaker: "cashcrop",
     text: "I paid a consultant. I did not sit with a calculator behind him. If the number is 21,600 then it is 21,600 — that is what we actually use.",
     mediator:
-      "Then the record shows 21,600, and I am not going to spend this meeting deciding whether you were deceived or doing the deceiving, because it changes nothing about how much water is in the ground. What it does change is this: every figure from here is checked against the wellhead totaliser and the maintenance log before it enters the schedule, yours and everyone else's.",
+      "Then the record shows 21,600, and I am not going to spend this meeting deciding whether you were deceived or doing the deceiving, because it changes nothing about how much water is in the ground. It also changes nothing about your allocation, and you should know why: the balance was already computing your share against 21,600, because that is what 0.9 hectares on drip can justify. Your ask of 22,000 was never doing any work. What the annex has done is take away the argument, not the water. And every figure from here is checked against the wellhead totaliser and the maintenance log before it enters the schedule, yours and everyone else's.",
     effects: [{ kind: "claim", party: "cashcrop", to: 21600, was: 22000 }],
   },
   {
@@ -214,15 +214,15 @@ export const MOVES: Move[] = [
     speaker: "households",
     text: "Then everyone should take forty per cent. That is the only fair way — the same cut for everybody.",
     mediator:
-      "That sounds fair and it is the one thing I will not do. An equal percentage cut takes the same share from the water a child drinks and the water a tomato drinks, and those are not the same good. Your floor does not move. Neither does the school's. What moves is everything above the floors, and because your ask is mostly floor and Kwame's is mostly not, you lose nineteen per cent and he loses fifty-eight. That is not favouritism. It is what the tiers were for.",
+      "That sounds fair and it is the one thing I will not do. An equal percentage cut takes the same share from the water a child drinks and the water a tomato drinks, and those are not the same good. Your floor does not move. Neither does the school's. What moves is everything above the floors, and because your ask is mostly floor and Kwame's is mostly not, you lose eighteen per cent and he loses fifty-nine. That is not favouritism. It is what the tiers were for.",
   },
   {
     id: "m13",
     phase: "rebuild",
     speaker: "cashcrop",
-    text: "Fifty-eight per cent. Then say it plainly — you are finishing us, and the school that arrived nine months ago keeps its water.",
+    text: "Fifty-nine per cent. Then say it plainly — you are finishing us, and the school that arrived nine months ago keeps its water.",
     mediator:
-      "You keep 8,658 litres a day, and 4,320 of that is a keep-alive floor that exists precisely so a bad season does not kill your established plants. You will crop less. You will not lose the farms. And the school is not holding water because it is popular — it is holding 5 litres per enrolled pupil, which would be the same number if the school had been there thirty years or opens next week. If your headcount changes, your floor changes too. That is the deal for everyone.",
+      "You keep {cashcrop} litres a day, and 4,320 of that is a keep-alive floor that exists precisely so a bad season does not kill your established plants. You will crop less. You will not lose the farms. And the school is not holding water because it is popular — it is holding 5 litres per enrolled pupil, which would be the same number if the school had been there thirty years or opens next week. If your headcount changes, your floor changes too. That is the deal for everyone.",
   },
   {
     id: "m14",
@@ -237,7 +237,7 @@ export const MOVES: Move[] = [
     id: "m15",
     phase: "rebuild",
     speaker: "school",
-    text: "I will take 2,926. But I want it written that if enrolment rises next term nobody has to be persuaded to give us more.",
+    text: "I will take {school}. But I want it written that if enrolment rises next term nobody has to be persuaded to give us more.",
     mediator:
       "Clause 3. Your floor recalculates on the district enrolment return each term, and it does not require anyone's agreement — it is arithmetic, not a favour. That protects you against being the newest party at the table, and it also means your floor falls if enrolment falls.",
   },
@@ -270,3 +270,17 @@ export const MOVES: Move[] = [
 ];
 
 export const REVEAL_MOVE = "m11";
+
+/**
+ * Scripted dialogue refers to allocations by `{partyId}`, never by a typed-out
+ * litre figure. A number written into the script is a number that goes stale
+ * the moment the balance changes, and the mediator's own instructions forbid
+ * stating a figure that is not on the schedule. Substituted at render time
+ * against the live balance, so what is said and what is shown cannot diverge.
+ */
+export function fillFigures(text: string, balance: Balance): string {
+  return text.replace(/\{(\w+)\}/g, (whole, id: string) => {
+    const a = balance.allocations.find((x) => x.partyId === id);
+    return a ? a.total.toLocaleString() : whole;
+  });
+}
