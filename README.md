@@ -1,5 +1,7 @@
 # The Mediator
 
+**Live: https://themediatorbot.vercel.app**
+
 A mediator for a shrinking community borehole. Five parties, one water source, and an output that is not a resolution but a signed instrument: volumes in litres per day, abstraction windows, sealed meters, levies, and a graduated response to overdraw.
 
 ## The core idea
