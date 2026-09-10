@@ -50,9 +50,18 @@ export interface Agreement {
 
 const L = (n: number) => `${Math.round(n).toLocaleString()} L/day`;
 
-export function buildAgreement(balance: Balance, revision = 1): Agreement {
+export function buildAgreement(
+  balance: Balance,
+  revision = 1,
+  amended: Party[] = PARTIES
+): Agreement {
+  // Terms renegotiated at the table (a revised window, a corrected claim) live
+  // on the amended party list. Reading the originals here would silently drop
+  // them from the signed document.
+  const lookup = (id: string) =>
+    amended.find((p) => p.id === id) ?? partyOf(id);
   const schedule: ScheduleRow[] = balance.allocations.map((a) => {
-    const p = partyOf(a.partyId);
+    const p = lookup(a.partyId);
     const levy = (a.total / 1000) * LEVY_PER_1000L[p.tier] * 30;
     return {
       partyId: p.id,
@@ -67,9 +76,7 @@ export function buildAgreement(balance: Balance, revision = 1): Agreement {
   });
 
   const levyTotalMonthly = schedule.reduce((s, r) => s + r.levyMonthly, 0);
-  const gatedParty = balance.gated[0]
-    ? partyOf(balance.gated[0].partyId)
-    : null;
+  const gatedParty = balance.gated[0] ? lookup(balance.gated[0].partyId) : null;
 
   const clauses: Clause[] = [
     {
