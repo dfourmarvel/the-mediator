@@ -11,7 +11,7 @@ import {
   type Party,
 } from "@/lib/water";
 import { buildAgreement, agreementFaults } from "@/lib/agreement";
-import { MOVES, PHASES, SPEAKERS, type Flag, type Effect } from "@/lib/negotiation";
+import { MOVES, PHASES, SPEAKERS, fillFigures, type Flag, type Effect } from "@/lib/negotiation";
 import { FACTS, TABLED_REPORT } from "@/lib/facts";
 import { MEDIATOR_SYSTEM, PROMPT_NOTES, ENGINE_GUARD } from "@/lib/prompts";
 import JudgesNote from "./JudgesNote";
@@ -229,7 +229,9 @@ export default function Page() {
       const res = await fetch("/api/challenge", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ question, yield_ }),
+        // Send the renegotiated terms too. Defending the original schedule
+        // while the screen shows an amended one is worse than not defending it.
+        body: JSON.stringify({ question, yield_, claims, windows }),
       });
       const d = await res.json();
       setAnswer(d.answer);
@@ -426,7 +428,7 @@ export default function Page() {
                             : "text-[14.5px] leading-[1.65] text-ink-soft pl-3 border-l-2 border-rule"
                         }
                       >
-                        {l.text}
+                        {fillFigures(l.text, balance)}
                       </p>
                       {!!l.flags?.length && (
                         <ul className="mt-2.5 pl-3 border-l border-rule-soft">
@@ -711,7 +713,7 @@ export default function Page() {
                     </span>
                   )}
                 </dt>
-                <dd className="mt-1.5 ml-7 text-[13.5px] leading-[1.6] text-muted">
+                <dd className="mt-1.5 ml-7 text-[13.5px] leading-[1.6] text-muted whitespace-pre-line">
                   {c.body}
                 </dd>
               </div>
@@ -754,7 +756,7 @@ export default function Page() {
             <div className="flex flex-wrap gap-1.5 mt-2.5">
               {[
                 "Why does the District Assembly get nothing?",
-                "Cash-crop lost 58%. Justify that.",
+                "Cash-crop lost 59%. Justify that.",
                 "Why not just cut everyone by 40%?",
                 "What happens if someone overdraws?",
               ].map((q) => (

@@ -30,7 +30,7 @@ interface Out {
  * and by party, litre figures are clamped, and yield — the one number that
  * moves everything — is only revisable from the engineer's seat.
  */
-function sanitise(out: Out, speaker: string) {
+function sanitise(out: Out) {
   const flags: Flag[] = [];
   for (const raw of Array.isArray(out.flags) ? out.flags : []) {
     const f = raw as Record<string, unknown>;
@@ -49,7 +49,10 @@ function sanitise(out: Out, speaker: string) {
     } else if (kind === "claim" && PARTY_IDS.has(party)) {
       const to = Number(e.to);
       const base = PARTIES.find((p) => p.id === party)!;
-      if (Number.isFinite(to) && to >= 0 && to <= base.claim * 3) {
+      // Downward only. A party can concede at the table; it cannot talk its way
+      // to a larger ask, and even a conceded figure is capped again by the
+      // party's needCeiling before the balance uses it.
+      if (Number.isFinite(to) && to >= 0 && to <= base.claim) {
         effects.push({ kind: "claim", party, to: Math.round(to), was: base.claim });
       }
     } else if (kind === "window" && PARTY_IDS.has(party)) {
@@ -60,7 +63,7 @@ function sanitise(out: Out, speaker: string) {
     // action rather than as model output.
   }
 
-  return { flags, effects, engineerSeat: speaker === "engineer" };
+  return { flags, effects };
 }
 
 export async function POST(req: Request) {
@@ -179,7 +182,7 @@ Return ONLY the JSON object described in your instructions. No text before or af
     });
   }
 
-  const { flags, effects } = sanitise(parsed, speaker);
+  const { flags, effects } = sanitise(parsed);
   return NextResponse.json({
     reply: String(parsed.reply).slice(0, 1200),
     flags,

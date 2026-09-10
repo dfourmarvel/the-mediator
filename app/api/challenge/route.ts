@@ -1,19 +1,34 @@
 import { NextResponse } from "next/server";
 import { chat, llmAvailable } from "@/lib/llm";
 import { CHALLENGE_SYSTEM_HEAD } from "@/lib/prompts";
-import { computeBalance, partyOf, TIERS } from "@/lib/water";
+import { computeBalance, partyOf, PARTIES, ASSUMED_YIELD, TIERS } from "@/lib/water";
 import { buildAgreement } from "@/lib/agreement";
 
 export const runtime = "nodejs";
 
 export async function POST(req: Request) {
-  const { question, yield_ } = (await req.json()) as {
+  const { question, yield_, claims, windows } = (await req.json()) as {
     question: string;
     yield_: number;
+    claims?: Record<string, number>;
+    windows?: Record<string, string>;
   };
 
-  const balance = computeBalance(yield_);
-  const agreement = buildAgreement(balance);
+  // Rebuild the amended party list the client is looking at. Terms renegotiated
+  // at the table — a corrected claim, a moved window — have to reach the defend
+  // path too, or it argues for a schedule nobody can see.
+  const parties = PARTIES.map((p) => ({
+    ...p,
+    claim: claims?.[p.id] ?? p.claim,
+    window: windows?.[p.id] ?? p.window,
+  }));
+
+  const balance = computeBalance(yield_, parties);
+  const agreement = buildAgreement(
+    balance,
+    yield_ === ASSUMED_YIELD ? 1 : 2,
+    parties
+  );
 
   const facts = [
     `SUSTAINABLE YIELD: ${balance.yield_.toLocaleString()} L/day. TOTAL ALLOCATED: ${balance.allocated.toLocaleString()} L/day.`,

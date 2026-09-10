@@ -74,4 +74,4 @@ export const PROMPT_NOTES: { rule: string; why: string }[] = [
 ];
 
 export const ENGINE_GUARD =
-  "Model output is treated as untrusted input. Flag kinds and effect kinds are whitelisted, litre figures are clamped to a sane range, and only the engineer's seat can revise sustainable yield — so nothing said at the table, by any party, can move water that the balance did not allocate.";
+  "Model output is treated as untrusted input. Flag kinds and effect kinds are whitelisted against the engine, and sustainable yield — the one number that moves everything — is not reachable from model output at all. What a party says can lower its own stated need and nothing else: claim revisions are clamped downward-only, and the balance computes every share against a ceiling derived from the record rather than against the ask. So talking cannot buy water, and asking for more cannot produce more.";

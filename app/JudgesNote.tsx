@@ -50,7 +50,7 @@ const CONSTRAINTS: { rule: string; how: string; where: string }[] = [
   },
   {
     rule: "Never collapse into a single winner.",
-    how: "Every party with a floor keeps its floor, including the one that loses most. Cash-crop absorbs a 58% cut and still holds a 4,320 L/day keep-alive allocation that exists specifically so a bad season does not kill established plants — it crops less, it does not lose the farms. The mediator also refuses the opposite failure when the households propose an equal 40% cut for everyone, because that takes the same share from the water a child drinks and the water a tomato drinks.",
+    how: "Every party with a floor keeps its floor, including the one that loses most. Cash-crop absorbs a 59% cut and still holds a 4,320 L/day keep-alive allocation that exists specifically so a bad season does not kill established plants — it crops less, it does not lose the farms. The mediator also refuses the opposite failure when the households propose an equal 40% cut for everyone, because that takes the same share from the water a child drinks and the water a tomato drinks.",
     where: "Moves 12 and 13",
   },
 ];
