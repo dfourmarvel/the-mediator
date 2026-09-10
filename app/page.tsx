@@ -11,7 +11,7 @@ import {
   type Party,
 } from "@/lib/water";
 import { buildAgreement, agreementFaults } from "@/lib/agreement";
-import { MOVES, PHASES, SPEAKERS, fillFigures, type Flag, type Effect } from "@/lib/negotiation";
+import { MOVES, PHASES, SPEAKERS, fillFigures, type Flag, type FlagKind, type Effect } from "@/lib/negotiation";
 import { FACTS, TABLED_REPORT } from "@/lib/facts";
 import { MEDIATOR_SYSTEM, PROMPT_NOTES, ENGINE_GUARD } from "@/lib/prompts";
 import JudgesNote from "./JudgesNote";
@@ -37,16 +37,24 @@ const FLAG_TONE: Record<Flag["kind"], string> = {
 
 function FlagRow({ f }: { f: Flag }) {
   return (
-    <li className="ev-in flex gap-2.5 py-1.5">
+    <li className="ev-in">
       <span
-        className={`shrink-0 w-[104px] text-[10.5px] font-semibold uppercase tracking-wide ${FLAG_TONE[f.kind]}`}
+        className={`block text-[11px] font-semibold uppercase tracking-[0.07em] ${FLAG_TONE[f.kind]}`}
       >
         {f.kind.replace(/_/g, " ")}
       </span>
-      <span className="text-[12.5px] leading-[1.5] text-muted">{f.note}</span>
+      <span className="mt-1 block text-[11.5px] leading-[1.5] text-muted">
+        {f.note}
+      </span>
     </li>
   );
 }
+
+const RAIL_TABS = [
+  { id: "allocation" as const, label: "Allocation" },
+  { id: "flags" as const, label: "Flags" },
+  { id: "record" as const, label: "Record" },
+];
 
 /** Floor solid, discretionary lighter. The floor is the part that cannot move. */
 function AllocBar({
@@ -98,6 +106,16 @@ export default function Page() {
   const [answer, setAnswer] = useState<string | null>(null);
   const [source, setSource] = useState("");
   const [shockPulse, setShockPulse] = useState(false);
+
+  /** Same kind caught twice is one line with a count, not two identical rows. */
+  const flagTally = useMemo(() => {
+    const n = new Map<FlagKind, number>();
+    for (const f of flags) n.set(f.kind, (n.get(f.kind) ?? 0) + 1);
+    return [...n.entries()];
+  }, [flags]);
+  const [rail, setRail] = useState<(typeof RAIL_TABS)[number]["id"]>(
+    "allocation"
+  );
   const scrollRef = useRef<HTMLDivElement>(null);
 
   const parties: Party[] = useMemo(
@@ -260,7 +278,8 @@ export default function Page() {
       key={id}
       onClick={() => enabled && setView(id)}
       disabled={!enabled}
-      className={`px-3 py-1.5 text-[13px] rounded-md transition-colors ${
+      title={enabled ? undefined : "Available once the mediation has started"}
+      className={`shrink-0 whitespace-nowrap px-3 py-1.5 text-[13px] rounded-md transition-colors ${
         view === id
           ? "bg-surface text-ink shadow-[0_1px_2px_rgba(16,24,40,0.06)]"
           : enabled
@@ -322,10 +341,20 @@ export default function Page() {
         <div className="mx-auto max-w-2xl px-6 py-14 sm:py-20">
           <button
             onClick={() => setView("judges")}
-            className="mb-7 inline-flex items-center gap-2 text-[13px] text-accent hover:underline underline-offset-4"
+            className="mb-8 flex w-full items-center gap-3 rounded-xl border border-accent/25 bg-accent-soft px-4 py-3 text-left transition-colors hover:border-accent/45"
           >
-            Judging this? Start here — how it works, and what to try
-            <span aria-hidden>&rarr;</span>
+            <span className="min-w-0 flex-1">
+              <span className="block text-[13.5px] font-medium text-accent">
+                Judging this? Start here
+              </span>
+              <span className="mt-0.5 block text-[12.5px] leading-[1.5] text-ink-soft">
+                How it works, every constraint from the brief and where it is
+                met, and four things to try.
+              </span>
+            </span>
+            <span aria-hidden className="shrink-0 text-accent">
+              &rarr;
+            </span>
           </button>
 
           <p className="text-[13px] text-muted mb-5">The problem</p>
@@ -401,9 +430,21 @@ export default function Page() {
       {view === "table" && (
         <div className="grid lg:grid-cols-[1fr_360px]">
           <section className="flex flex-col lg:max-h-[calc(100vh-65px)] border-b lg:border-b-0 lg:border-r border-rule">
+            {/* Identity and turn count only — the party roster and figures
+                already live in the top bar and the rail. */}
+            <div className="border-b border-rule px-6 py-4 sm:px-8">
+              <div className="text-[17px] font-semibold tracking-[-0.012em]">
+                Nkwanta Borehole · Mediation session
+              </div>
+              <div className="text-[13px] text-muted">
+                {PHASES.find((p) => p.id === phase)?.label} · {moveIndex} of{" "}
+                {MOVES.length} turns
+              </div>
+            </div>
+
             <div
               ref={scrollRef}
-              className="flex-1 overflow-y-auto px-5 sm:px-8 py-6 min-h-[380px]"
+              className="flex-1 overflow-y-auto px-6 sm:px-8 py-6 min-h-[380px]"
             >
               {!started && (
                 <p className="text-[14px] leading-[1.6] text-muted max-w-[62ch]">
@@ -412,26 +453,45 @@ export default function Page() {
                   and open the meeting yourself.
                 </p>
               )}
-              <div className="max-w-[70ch] space-y-6">
+
+              {started && (
+                <div className="mb-4 hidden xl:grid xl:grid-cols-[minmax(0,1fr)_200px] xl:gap-x-8">
+                  <span className="text-[10px] uppercase tracking-[0.11em] text-muted">
+                    Negotiation
+                  </span>
+                  <span className="text-[10px] uppercase tracking-[0.11em] text-muted">
+                    What the mediator caught
+                  </span>
+                </div>
+              )}
+
+              {/* Dialogue and flags are different kinds of thing, so they get
+                  different columns rather than different margins. */}
+              <div className="space-y-6">
                 {lines.map((l, i) => {
                   const isMed = l.speaker === "mediator";
                   const who = SPEAKERS[l.speaker];
                   return (
-                    <div key={i}>
-                      <div className="text-[11px] text-muted mb-1">
-                        {isMed ? "Mediator" : `${who?.name ?? l.speaker} · ${who?.role ?? ""}`}
+                    <div
+                      key={i}
+                      className="xl:grid xl:grid-cols-[minmax(0,1fr)_200px] xl:gap-x-8"
+                    >
+                      <div>
+                        <div className="text-[11.5px] text-muted mb-1">
+                          {isMed ? "Mediator" : `${who?.name ?? l.speaker} · ${who?.role ?? ""}`}
+                        </div>
+                        <p
+                          className={
+                            isMed
+                              ? "max-w-[62ch] text-[15px] leading-[1.62]"
+                              : "max-w-[62ch] text-[15px] leading-[1.62] text-ink-soft pl-3 border-l-2 border-rule"
+                          }
+                        >
+                          {fillFigures(l.text, balance)}
+                        </p>
                       </div>
-                      <p
-                        className={
-                          isMed
-                            ? "text-[14.5px] leading-[1.65]"
-                            : "text-[14.5px] leading-[1.65] text-ink-soft pl-3 border-l-2 border-rule"
-                        }
-                      >
-                        {fillFigures(l.text, balance)}
-                      </p>
                       {!!l.flags?.length && (
-                        <ul className="mt-2.5 pl-3 border-l border-rule-soft">
+                        <ul className="mt-3 space-y-3 border-l border-rule-soft pl-4 xl:mt-0">
                           {l.flags.map((f, j) => (
                             <FlagRow key={j} f={f} />
                           ))}
@@ -443,7 +503,7 @@ export default function Page() {
               </div>
             </div>
 
-            <div className="border-t border-rule px-5 sm:px-8 py-3 space-y-3">
+            <div className="border-t border-rule px-6 sm:px-8 py-3 space-y-3">
               <div className="flex flex-wrap items-center gap-2">
                 <span className="text-[10.5px] uppercase tracking-wider text-muted w-9">
                   Demo
@@ -510,121 +570,170 @@ export default function Page() {
             </div>
           </section>
 
-          <aside className="p-4 sm:p-5 space-y-7 lg:max-h-[calc(100vh-65px)] overflow-y-auto">
-            <div className={shockPulse ? "pulse-once rounded-lg" : "rounded-lg"}>
-              <div className="flex items-baseline justify-between mb-2">
-                <h2 className="text-[12px] font-medium text-muted">Water balance</h2>
-                <span
-                  className={`tnum text-[12px] ${shocked ? "text-against font-medium" : "text-muted"}`}
-                >
-                  {L(balance.allocated)} / {L(yield_)} L
-                </span>
+          {/* Water balance is pinned — it is this app's proof the terms add
+              up, so it does not get relegated behind a tab. Everything else
+              switches, because stacking all three at once was the wall of
+              numbers judges tripped over. */}
+          <aside className="flex flex-col lg:max-h-[calc(100vh-65px)]">
+            <div className="px-4 pt-4 sm:px-5 sm:pt-5">
+              <div className={shockPulse ? "pulse-once rounded-lg" : "rounded-lg"}>
+                <div className="flex items-baseline justify-between mb-2">
+                  <h2 className="text-[12px] font-medium text-muted">Water balance</h2>
+                  <span
+                    className={`tnum text-[12px] ${shocked ? "text-against font-medium" : "text-muted"}`}
+                  >
+                    {L(balance.allocated)} / {L(yield_)} L
+                  </span>
+                </div>
+                <div className="relative h-2.5 rounded-full bg-rule-soft overflow-hidden mb-1">
+                  <div
+                    className="bar-fill absolute inset-y-0 left-0 bg-ink-soft rounded-full"
+                    style={{ width: `${Math.min(100, (balance.allocated / yield_) * 100)}%` }}
+                  />
+                </div>
+                <p className="text-[12px] text-muted">
+                  {balance.feasible
+                    ? `Floors ${L(balance.floorsTotal)} · discretionary pool ${L(balance.pool)}`
+                    : "Floors exceed yield. This is a supply emergency, not a negotiation."}
+                </p>
               </div>
-              <div className="relative h-2.5 rounded-full bg-rule-soft overflow-hidden mb-1">
-                <div
-                  className="bar-fill absolute inset-y-0 left-0 bg-ink-soft rounded-full"
-                  style={{ width: `${Math.min(100, (balance.allocated / yield_) * 100)}%` }}
-                />
-              </div>
-              <p className="text-[11.5px] text-muted">
-                {balance.feasible
-                  ? `Floors ${L(balance.floorsTotal)} · discretionary pool ${L(balance.pool)}`
-                  : "Floors exceed yield. This is a supply emergency, not a negotiation."}
-              </p>
             </div>
 
-            <div>
-              <h2 className="text-[12px] font-medium text-muted mb-3">
-                Allocation {shocked ? "after the pump test" : "on assumed yield"}
-              </h2>
-              <div className="space-y-3">
-                {balance.allocations.map((a) => {
-                  const p = parties.find((x) => x.id === a.partyId)!;
-                  const d = deltas.find((x) => x.partyId === a.partyId);
-                  return (
-                    <div key={a.partyId}>
-                      <div className="flex items-baseline gap-2 mb-1">
-                        <span className="text-[12.5px] font-medium truncate">{p.name}</span>
-                        <span className="tnum ml-auto text-[12.5px]">{L(a.total)}</span>
-                        {d && d.change !== 0 && (
-                          <span
-                            className={`tnum text-[11px] ${d.change < 0 ? "text-against" : "text-place"}`}
-                          >
-                            {d.change > 0 ? "+" : ""}
-                            {(d.pct * 100).toFixed(0)}%
-                          </span>
-                        )}
-                      </div>
-                      <AllocBar
-                        floor={a.floor}
-                        total={a.total}
-                        scale={Math.max(...balance.allocations.map((x) => x.total), 1)}
-                        tier={p.tier}
-                      />
-                      <div className="mt-1 flex justify-between text-[11px] text-muted">
-                        <span>
-                          floor {L(a.floor)} · {TIERS[p.tier].label.toLowerCase()}
-                        </span>
-                        <span className="tnum">{(a.ofClaim * 100).toFixed(0)}% of ask</span>
-                      </div>
-                    </div>
-                  );
-                })}
-                {balance.gated.map((g) => (
-                  <div key={g.partyId} className="pt-1">
-                    <div className="flex items-baseline gap-2">
-                      <span className="text-[12.5px] font-medium text-muted truncate">
-                        {partyOf(g.partyId).name}
-                      </span>
-                      <span className="tnum ml-auto text-[12.5px] text-muted">0</span>
-                    </div>
-                    <p className="mt-1 text-[11px] leading-[1.5] text-mark">
-                      Deferred, not refused — reopens on filing a specification.
-                    </p>
-                  </div>
+            <div className="px-4 pt-4 sm:px-5">
+              <div className="flex gap-0.5 rounded-lg border border-rule bg-panel p-0.5">
+                {RAIL_TABS.map((t) => (
+                  <button
+                    key={t.id}
+                    onClick={() => setRail(t.id)}
+                    aria-pressed={rail === t.id}
+                    className={`flex-1 rounded-md px-2 py-1.5 text-[12px] transition-colors ${
+                      rail === t.id
+                        ? "bg-surface font-medium text-ink shadow-[0_1px_2px_rgba(16,24,40,0.06)]"
+                        : "text-muted hover:text-ink"
+                    }`}
+                  >
+                    {t.label}
+                  </button>
                 ))}
               </div>
             </div>
 
-            {!!flags.length && (
-              <div>
-                <h2 className="text-[12px] font-medium text-muted mb-2">
-                  What the mediator caught
-                </h2>
-                <ul className="space-y-1">
-                  {flags.map((f, i) => (
-                    <li key={i} className="text-[11.5px] leading-snug">
-                      <span className={`font-semibold ${FLAG_TONE[f.kind]}`}>
-                        {f.kind.replace(/_/g, " ").toLowerCase()}
-                      </span>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            )}
+            <div className="flex-1 overflow-y-auto p-4 sm:p-5">
+              {rail === "allocation" && (
+                <div>
+                  <h2 className="text-[12px] font-medium text-muted mb-3">
+                    Allocation {shocked ? "after the pump test" : "on assumed yield"}
+                  </h2>
+                  <div className="space-y-3">
+                    {balance.allocations.map((a) => {
+                      const p = parties.find((x) => x.id === a.partyId)!;
+                      const d = deltas.find((x) => x.partyId === a.partyId);
+                      return (
+                        <div key={a.partyId}>
+                          <div className="flex items-baseline gap-2 mb-1">
+                            <span className="text-[13px] font-medium truncate">{p.name}</span>
+                            <span className="tnum ml-auto text-[13px]">{L(a.total)}</span>
+                            {d && d.change !== 0 && (
+                              <span
+                                className={`tnum text-[12px] ${d.change < 0 ? "text-against" : "text-place"}`}
+                              >
+                                {d.change > 0 ? "+" : ""}
+                                {(d.pct * 100).toFixed(0)}%
+                              </span>
+                            )}
+                          </div>
+                          <AllocBar
+                            floor={a.floor}
+                            total={a.total}
+                            scale={Math.max(...balance.allocations.map((x) => x.total), 1)}
+                            tier={p.tier}
+                          />
+                          <div className="mt-1 flex justify-between text-[12px] text-muted">
+                            <span>
+                              floor {L(a.floor)} · {TIERS[p.tier].label.toLowerCase()}
+                            </span>
+                            <span className="tnum">{(a.ofClaim * 100).toFixed(0)}% of ask</span>
+                          </div>
+                        </div>
+                      );
+                    })}
+                    {balance.gated.map((g) => (
+                      <div key={g.partyId} className="pt-1">
+                        <div className="flex items-baseline gap-2">
+                          <span className="text-[13px] font-medium text-muted truncate">
+                            {partyOf(g.partyId).name}
+                          </span>
+                          <span className="tnum ml-auto text-[13px] text-muted">0</span>
+                        </div>
+                        <p className="mt-1 text-[12px] leading-[1.5] text-mark">
+                          Deferred, not refused — reopens on filing a specification.
+                        </p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
 
-            {!!record.length && (
-              <div>
-                <h2 className="text-[12px] font-medium text-muted mb-2">
-                  Running record
-                </h2>
-                <ul className="space-y-1.5">
-                  {record.slice(-6).map((r, i) => (
-                    <li key={i} className="text-[11.5px] leading-snug text-muted">
-                      {r}
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            )}
+              {rail === "flags" &&
+                (flags.length === 0 ? (
+                  <p className="text-[12.5px] leading-[1.55] text-muted">
+                    Nothing flagged yet. This fills the moment a claim can&rsquo;t
+                    be verified, someone leans on authority, or the record
+                    contradicts itself.
+                  </p>
+                ) : (
+                  <>
+                    <p className="mb-2.5 text-[12px] text-muted">
+                      {flags.length} caught so far. The detail sits beside the
+                      turn that caused it.
+                    </p>
+                    <ul className="space-y-1.5">
+                      {flagTally.map(([kind, n]) => (
+                        <li
+                          key={kind}
+                          className="flex items-baseline gap-2 text-[12.5px] leading-snug"
+                        >
+                          <span className={`font-semibold ${FLAG_TONE[kind]}`}>
+                            {kind.replace(/_/g, " ").toLowerCase()}
+                          </span>
+                          {n > 1 && (
+                            <span className="tnum ml-auto text-[11.5px] text-muted">
+                              ×{n}
+                            </span>
+                          )}
+                        </li>
+                      ))}
+                    </ul>
+                  </>
+                ))}
+
+              {rail === "record" &&
+                (record.length === 0 ? (
+                  <p className="text-[12.5px] leading-[1.55] text-muted">
+                    Nothing on the record yet. Every substantive claim a party
+                    makes is logged here, so a later contradiction is checked
+                    against the whole history rather than the last thing said.
+                  </p>
+                ) : (
+                  <ul className="space-y-1.5">
+                    {record.slice(-6).map((r, i) => (
+                      <li key={i} className="text-[12px] leading-snug text-muted">
+                        {r}
+                      </li>
+                    ))}
+                  </ul>
+                ))}
+            </div>
 
             {started && (
-              <button
-                onClick={() => setView("agreement")}
-                className="w-full px-3 py-2.5 rounded-lg border border-rule text-[13px] hover:bg-panel transition-colors"
-              >
-                See the agreement
-              </button>
+              <div className="border-t border-rule p-4 sm:p-5">
+                <button
+                  onClick={() => setView("agreement")}
+                  className="w-full px-3 py-2.5 rounded-lg border border-rule text-[13px] hover:bg-panel transition-colors"
+                >
+                  See the agreement
+                </button>
+              </div>
             )}
           </aside>
         </div>
