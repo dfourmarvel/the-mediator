@@ -441,14 +441,17 @@ export default function Page() {
               </div>
             </div>
 
-            <div className="border-t border-rule px-5 sm:px-8 py-3 space-y-2.5">
+            <div className="border-t border-rule px-5 sm:px-8 py-3 space-y-3">
               <div className="flex flex-wrap items-center gap-2">
+                <span className="text-[10.5px] uppercase tracking-wider text-muted w-9">
+                  Demo
+                </span>
                 <button
                   onClick={() => playMove(moveIndex)}
                   disabled={done || busy || running}
                   className="px-2.5 py-1.5 rounded-md border border-rule text-[12px] text-ink-soft hover:bg-panel disabled:opacity-35 transition-colors"
                 >
-                  Next scripted move · {moveIndex}/{MOVES.length}
+                  Step one turn · {moveIndex}/{MOVES.length}
                 </button>
                 {!shocked && (
                   <button
@@ -465,12 +468,17 @@ export default function Page() {
                   </span>
                 )}
               </div>
-              <p className="text-[12px] leading-[1.5] text-muted">
-                Not a script. Take any seat and the mediator answers live —
-                against the record, and against what that seat said earlier. Try
-                arguing from authority, or tabling a figure that contradicts you.
-              </p>
-              <div className="flex flex-wrap gap-2">
+              <div className="flex flex-wrap items-start gap-2">
+                <span className="text-[10.5px] uppercase tracking-wider text-muted w-9 pt-2.5">
+                  Live
+                </span>
+                <p className="flex-1 min-w-[240px] text-[12px] leading-[1.5] text-muted pt-2">
+                  Take a seat and the mediator answers in real time — against the
+                  record, and against what that seat said earlier. Try arguing
+                  from authority, or tabling a figure that contradicts you.
+                </p>
+              </div>
+              <div className="flex flex-wrap gap-2 sm:pl-11">
                 <select
                   value={seat}
                   onChange={(e) => setSeat(e.target.value)}
